@@ -1,0 +1,298 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexVault - Portal & Role-Based Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QRCode.js Library for generating QR Codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Html5-QRCode Library for Camera Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 min-h-screen flex flex-col justify-between antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app" class="flex-grow flex flex-col">
+
+        <!-- HEADER (Visible when logged in) -->
+        <header id="main-header" class="hidden bg-slate-800 border-b border-slate-700 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-brand-600 p-2 rounded-lg text-white">
+                            <i data-lucide="shield-check" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-xl font-bold text-white tracking-tight">ApexVault</span>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block">
+                            <p id="nav-user-name" class="text-sm font-semibold text-slate-200">User</p>
+                            <span id="nav-user-role" class="inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-brand-950 text-brand-400 border border-brand-800">Standard User</span>
+                        </div>
+                        <button onclick="handleLogout()" class="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-600">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- AUTHENTICATION VIEW -->
+        <section id="auth-view" class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            <div class="w-full max-w-md">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center p-3 bg-brand-600 text-white rounded-2xl shadow-lg shadow-brand-500/20 mb-3">
+                        <i data-lucide="shield-check" class="w-8 h-8"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">ApexVault Portal</h1>
+                    <p class="text-sm text-slate-400 mt-1">Secure Digital Banking & System Operations</p>
+                </div>
+
+                <div class="glass-card rounded-2xl shadow-2xl p-6 sm:p-8 border border-slate-700/50">
+                    <!-- Auth Tabs -->
+                    <div class="flex rounded-xl bg-slate-100 p-1 mb-6">
+                        <button type="button" id="tab-login-btn" onclick="switchTab('login')" class="flex-1 py-2 text-sm font-semibold rounded-lg text-slate-800 bg-white shadow-sm transition-all">Sign In</button>
+                        <button type="button" id="tab-register-btn" onclick="switchTab('register')" class="flex-1 py-2 text-sm font-semibold rounded-lg text-slate-500 hover:text-slate-800 transition-all">Register</button>
+                    </div>
+
+                    <!-- LOGIN FORM -->
+                    <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Username</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i data-lucide="user" class="w-5 h-5"></i>
+                                </span>
+                                <input type="text" id="login-username" required placeholder="Enter username" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Password</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i data-lucide="lock" class="w-5 h-5"></i>
+                                </span>
+                                <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                                <button type="button" onclick="togglePasswordVisibility('login-password')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                    <i data-lucide="eye" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-lg shadow-md shadow-brand-600/30 transition-all flex items-center justify-center gap-2 mt-2">
+                            <span>Sign In</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+
+                    <!-- REGISTER FORM -->
+                    <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Desired Username</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                                </span>
+                                <input type="text" id="reg-username" required placeholder="Choose a username" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Select Role</label>
+                            <select id="reg-role" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="user">Standard User</option>
+                                <option value="administrator">System Administrator (RBAC Role)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Create Password</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i data-lucide="lock" class="w-5 h-5"></i>
+                                </span>
+                                <input type="password" id="reg-password" required placeholder="••••••••" oninput="checkPasswordStrength(this.value)" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                            <div class="mt-2 h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                                <div id="password-strength-bar" class="h-full bg-slate-300 w-0 transition-all duration-300"></div>
+                            </div>
+                            <p id="password-strength-text" class="text-[10px] text-slate-400 mt-1">Minimum 8 characters required</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Confirm Password</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                                </span>
+                                <input type="password" id="reg-password-confirm" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 mt-2">
+                            <i data-lucide="user-check" class="w-4 h-4"></i>
+                            <span>Register & Sign In</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- DASHBOARD VIEW -->
+        <main id="dashboard-view" class="hidden flex-grow bg-slate-900 p-4 sm:p-6 lg:p-8">
+            <div class="max-w-7xl mx-auto space-y-6">
+
+                <!-- Welcome Header Bar -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            Welcome back, <span id="dash-username" class="text-brand-400">User</span>!
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Your 11-digit account and transfer features are active.</p>
+                    </div>
+
+                    <button onclick="toggleQuickTransfer()" class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-brand-600/30 flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        <span>Quick Transfer</span>
+                    </button>
+                </div>
+
+                <!-- ADMIN MODERATION & MANAGEMENT PANEL (Visible ONLY for Administrator Role) -->
+                <div id="admin-rbac-panel" class="hidden bg-slate-800/90 border border-amber-500/50 rounded-2xl p-6 shadow-2xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700/80 pb-4">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="shield-alert" class="w-6 h-6 text-amber-400"></i>
+                            <div>
+                                <h3 class="text-lg font-bold text-white">System Administrator Management Panel</h3>
+                                <p class="text-xs text-slate-400">Role-Based Control: Manage account statuses and system moderation.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-mono bg-amber-950 text-amber-400 border border-amber-800 px-3 py-1 rounded-full font-bold">
+                            Role: Administrator
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                        <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl">
+                            <div class="text-xs font-semibold text-slate-400 uppercase">Total User Accounts</div>
+                            <div id="admin-stat-users" class="text-2xl font-bold text-amber-400 mt-1">0</div>
+                            <span class="text-[10px] text-slate-500">Stored in LocalStorage</span>
+                        </div>
+                        <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl">
+                            <div class="text-xs font-semibold text-slate-400 uppercase">System Status</div>
+                            <div class="text-2xl font-bold text-emerald-400 mt-1">Active Moderation</div>
+                            <span class="text-[10px] text-slate-500">RBAC Controls Enabled</span>
+                        </div>
+                        <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl">
+                            <div class="text-xs font-semibold text-slate-400 uppercase">Authentication Mode</div>
+                            <div class="text-xl font-bold text-slate-200 mt-1 font-mono">SHA-256 + Salt</div>
+                            <span class="text-[10px] text-slate-500">Client-Side Web Crypto</span>
+                        </div>
+                    </div>
+
+                    <!-- Admin Account Moderation Table -->
+                    <div class="pt-2">
+                        <h4 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4 text-amber-400"></i> Account Moderation & Actions
+                        </h4>
+                        <div class="overflow-x-auto rounded-xl border border-slate-700">
+                            <table class="w-full text-left text-sm text-slate-300">
+                                <thead class="text-xs uppercase bg-slate-900 text-slate-400 border-b border-slate-700">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Username</th>
+                                        <th class="py-2.5 px-3">Role</th>
+                                        <th class="py-2.5 px-3">Account No</th>
+                                        <th class="py-2.5 px-3">Status</th>
+                                        <th class="py-2.5 px-3 text-right">Moderation Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-moderation-tbody" class="divide-y divide-slate-700/50 bg-slate-900/40">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Available Balance</span>
+                            <i data-lucide="wallet" class="w-5 h-5 text-brand-500"></i>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-white font-mono" id="user-balance">$24,580.00</div>
+                        <span class="text-xs text-emerald-400 flex items-center gap-1 mt-1">
+                            <i data-lucide="trending-up" class="w-3 h-3"></i> +2.4% this month
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Registered Accounts</span>
+                            <i data-lucide="users" class="w-5 h-5 text-purple-400"></i>
+                        </div>
+                        <div id="total-reg-users-count" class="mt-2 text-2xl font-bold text-white">0 Saved</div>
+                        <span class="text-xs text-emerald-400 mt-1 block">Stored Permanently</span>
+                    </div>
+
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Security Rating</span>
+                            <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-emerald-400">Optimal</div>
+                        <span class="text-xs text-slate-400 mt-1 block">SHA-256 Auth Active</span>
+                    </div>
+
+                    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+                        <div class="flex items-center justify-between text-slate-400">
+                            <span class="text-xs font-semibold uppercase tracking-wider">My Account No.</span>
+                            <i data-lucide="credit-card" class="w-5 h-5 text-amber-400"></i>
+                        </div>
+                        <div id="user-acc-num" class="mt-2 text-xl font-bold font-mono text-white">------------</div>
+                        <span class="text-xs text-slate-400 mt-1 block">11-Digit Assigned Account</span>
+                    </div>
+                </div>
+
+                <!-- DIRECT 11-DIGIT MONEY TRANSFER CARD (TOGGLEABLE) -->
+                <div id="quick-transfer-section" class="hidden bg-slate-800 border border-brand-500/50 rounded-2xl p-6 shadow-2xl transition-all">
+                    <div class="flex items-ce
